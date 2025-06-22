@@ -40,4 +40,5 @@ The model explains -372.06% of the variance in property prices in Rabat. RMSE re
 The project scraped or simulated 146 listings for Rabat, implemented a data pipeline, conducted EDA, and built a regression model. The model provides a baseline for price prediction, with opportunities for enhancement via richer data and advanced methods.
 
 ---
+Le project est realiser par: MOHAMMED HAMDANI
 *Code and documentation available on GitHub: https://github.com/DevCleverMed/real-estate-price-prediction .*
