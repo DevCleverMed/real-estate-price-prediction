@@ -37,6 +37,12 @@ TIMEOUT = 20
 ua = UserAgent()
 
 def get_headers():
+    """
+    Generate a dictionary of HTTP headers with a random user agent to mimic browser requests.
+    
+    Returns:
+        dict: A dictionary containing HTTP headers including a random User-Agent.
+    """
     return {
         'User-Agent': ua.random,
         'Accept-Language': 'fr-FR,fr;q=0.9',
@@ -48,6 +54,15 @@ def get_headers():
     }
 
 def extract_price(text):
+    """
+    Extract a numerical price value from a text string, handling various formats.
+    
+    Args:
+        text (str): The text containing the price (e.g., with 'DH', commas, or spaces).
+    
+    Returns:
+        float or None: The extracted price as a float, or None if no valid price is found.
+    """
     if not text:
         return None
     text = text.replace(' ', '').replace(',', '').replace('\xa0', '')
@@ -55,6 +70,15 @@ def extract_price(text):
     return float(match.group(1).replace(' ', '')) if match else None
 
 def parse_listing(listing):
+    """
+    Parse a single property listing from BeautifulSoup object to extract relevant details.
+    
+    Args:
+        listing (bs4.element.Tag): A BeautifulSoup element representing a property listing.
+    
+    Returns:
+        dict or None: A dictionary with parsed data (title, price, bedrooms, etc.), or None if parsing fails.
+    """
     result = {
         'title': None,
         'price_dh': None,
@@ -127,6 +151,18 @@ def parse_listing(listing):
     return None
 
 def scrape_page(page_num):
+    """
+    Scrape property listings from a specific page on Mubawab.ma.
+    
+    Args:
+        page_num (int): The page number to scrape.
+    
+    Returns:
+        list: A list of dictionaries containing parsed listing data, or None if scraping fails.
+    
+    Notes:
+        Saves the raw HTML to a file if no listings are found, for debugging purposes.
+    """
     try:
         url = f"{SEARCH_URL}:p:{page_num}" if page_num > 1 else SEARCH_URL
         logger.info(f"Requesting page {page_num}: {url}")
@@ -157,6 +193,15 @@ def scrape_page(page_num):
         return None
 
 def simulate_web_scraping():
+    """
+    Generate simulated property data as a fallback when scraping fails.
+    
+    Returns:
+        pd.DataFrame: A DataFrame containing simulated data with columns for price, surface, bedrooms, etc.
+    
+    Notes:
+        Uses random distributions to mimic real estate data for Rabat.
+    """
     logger.info("Generating simulated data as fallback.")
     np.random.seed(42)
     n_samples = 150
@@ -177,6 +222,16 @@ def simulate_web_scraping():
     return pd.DataFrame(data)
 
 def scrape_data():
+    """
+    Scrape property listings from Mubawab.ma or use simulated data if scraping fails.
+    
+    Returns:
+        pd.DataFrame: A DataFrame containing scraped or simulated property listings.
+    
+    Notes:
+        Limits collection to MAX_LISTINGS (200) and stops at MIN_LISTINGS (150) if reached.
+        Includes delays to avoid overloading the server.
+    """
     all_data = []
     page_num = 1
     
@@ -224,6 +279,13 @@ else:
 
 # 2. Data Cleaning Pipeline
 def create_data_pipeline():
+    """
+    Create a data preprocessing pipeline for numerical and categorical features.
+    
+    Returns:
+        ColumnTransformer: A transformer combining imputation and scaling for numerical data,
+                          and imputation and one-hot encoding for categorical data.
+    """
     numeric_features = ['surface_m2', 'bedrooms', 'year_built']
     categorical_features = ['location', 'property_type']
     
@@ -259,6 +321,16 @@ df = df[['price_dh', 'surface_m2', 'bedrooms', 'location', 'property_type', 'yea
 
 # Handle outliers using IQR
 def remove_outliers(df, column):
+    """
+    Remove outliers from a specified column using the Interquartile Range (IQR) method.
+    
+    Args:
+        df (pd.DataFrame): The input DataFrame.
+        column (str): The column name to check for outliers.
+    
+    Returns:
+        pd.DataFrame: The DataFrame with outliers removed or retained as NaN where applicable.
+    """
     if df[column].isna().all():
         return df
     Q1 = df[column].quantile(0.25)
@@ -273,6 +345,16 @@ df = remove_outliers(df, 'surface_m2')
 
 # 3. Exploratory Data Analysis (EDA)
 def perform_eda(df):
+    """
+    Perform exploratory data analysis and save visualizations to the 'plots' directory.
+    
+    Args:
+        df (pd.DataFrame): The input DataFrame containing property data.
+    
+    Notes:
+        Generates and saves plots for price distribution, correlation matrix, price by location,
+        and price vs. surface area.
+    """
     if not os.path.exists('plots'):
         os.makedirs('plots')
     
@@ -317,6 +399,15 @@ perform_eda(df)
 
 # 4. Modeling (Multiple Regression)
 def train_model(df):
+    """
+    Train a multiple regression model to predict property prices.
+    
+    Args:
+        df (pd.DataFrame): The input DataFrame containing cleaned property data.
+    
+    Returns:
+        tuple: A dictionary with model metrics (R2, RMSE, MAE) and the trained pipeline, or (empty dict, None) if data is insufficient.
+    """
     X = df.drop('price_dh', axis=1)
     y = df['price_dh'].dropna()
     X = X.loc[y.index]
@@ -347,6 +438,15 @@ metrics, model = train_model(df)
 
 # 5. Generate Markdown Report
 def generate_report(metrics):
+    """
+    Generate a Markdown report summarizing the project findings and performance.
+    
+    Args:
+        metrics (dict): A dictionary containing model evaluation metrics (R2, RMSE, MAE).
+    
+    Notes:
+        Saves the report to 'project_report.md' and includes a placeholder for a GitHub link.
+    """
     report = f"""
 # Real Estate Price Prediction Project Report (Rabat, Mubawab.ma)
 
@@ -389,7 +489,7 @@ The model explains {metrics['R2']*100:.2f}% of the variance in property prices i
 The project scraped or simulated {len(df)} listings for Rabat, implemented a data pipeline, conducted EDA, and built a regression model. The model provides a baseline for price prediction, with opportunities for enhancement via richer data and advanced methods.
 
 ---
-*Code and documentation available on GitHub: [Insert GitHub link].*
+*Code and documentation available on GitHub: [https://github.com/DevCleverMed/real-estate-price-prediction].*
 """
     with open('project_report.md', 'w') as f:
         f.write(report)
